@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AI Wellness Assistant</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f4f8;display:flex;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:230px;min-height:100vh;background:#1e293b;
+  display:flex;flex-direction:column;padding:0;
+  position:sticky;top:0;height:100vh;flex-shrink:0;
+}
+.logo{padding:24px 20px 20px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:12px;}
+.logo-title{font-size:18px;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:10px;}
+.logo-sub{font-size:11px;color:#64748b;margin-top:3px;padding-left:32px;}
+.nav-btn{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 16px;margin:2px 10px;
+  border-radius:10px;border:none;background:none;
+  color:#94a3b8;font-size:14px;font-weight:500;
+  cursor:pointer;width:calc(100% - 20px);text-align:left;
+  transition:all .18s;
+}
+.nav-btn:hover{background:rgba(255,255,255,.06);color:#e2e8f0;}
+.nav-btn.active{background:#3b82f6;color:#fff;}
+.nav-icon{font-size:18px;width:22px;text-align:center;flex-shrink:0;}
+
+/* ── MAIN ── */
+.main{flex:1;padding:36px 40px;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;animation:fadeUp .25s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.page-header{margin-bottom:28px;}
+.page-header h1{font-size:26px;font-weight:700;color:#1e293b;margin-bottom:4px;}
+.page-header p{font-size:14px;color:#64748b;}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:28px;margin-bottom:20px;}
+.card h2{font-size:17px;font-weight:700;color:#1e293b;margin-bottom:4px;}
+.card .sub{font-size:13px;color:#64748b;margin-bottom:20px;}
+
+/* ── STAT ROW ── */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+.stat-card{background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:18px;display:flex;align-items:center;gap:14px;}
+.stat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.stat-val{font-size:18px;font-weight:700;color:#1e293b;}
+.stat-lbl{font-size:12px;color:#64748b;margin-top:2px;}
+
+/* ── PROBLEM + FEATURE GRIDS ── */
+.problem-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+.problem-card{background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:20px;display:flex;gap:14px;}
+.picon{font-size:28px;flex-shrink:0;}
+.problem-card h3{font-size:15px;font-weight:700;color:#1e293b;margin-bottom:4px;}
+.problem-card p{font-size:13px;color:#64748b;line-height:1.5;}
+.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.feature-card{border-radius:12px;padding:18px;border:1px solid transparent;text-align:center;}
+.feature-card .ficon{font-size:26px;margin-bottom:10px;}
+.feature-card h4{font-size:14px;font-weight:700;color:#1e293b;margin-bottom:4px;}
+.feature-card p{font-size:12px;color:#64748b;}
+.fc-blue{background:#eff6ff;border-color:#bfdbfe;}
+.fc-green{background:#f0fdf4;border-color:#bbf7d0;}
+.fc-amber{background:#fffbeb;border-color:#fde68a;}
+
+/* ── FORM ELEMENTS ── */
+textarea,input[type=text]{
+  width:100%;padding:12px 14px;border-radius:10px;
+  border:1.5px solid #e2e8f0;font-size:14px;font-family:inherit;
+  background:#f8fafc;color:#1e293b;outline:none;
+  transition:border .18s;resize:vertical;
+}
+textarea{min-height:110px;}
+textarea:focus,input[type=text]:focus{border-color:#3b82f6;background:#fff;}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 22px;border-radius:10px;border:none;
+  font-size:14px;font-weight:600;cursor:pointer;
+  transition:all .18s;font-family:inherit;
+}
+.btn-primary{background:#3b82f6;color:#fff;}
+.btn-primary:hover{background:#2563eb;}
+.btn-primary:disabled{background:#93c5fd;cursor:not-allowed;}
+.btn-secondary{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;}
+.btn-secondary:hover{background:#e2e8f0;}
+.btn-danger{background:#fee2e2;color:#b91c1c;}
+.btn-danger:hover{background:#fecaca;}
+.btn-green{background:#dcfce7;color:#15803d;}
+.btn-green:hover{background:#bbf7d0;}
+.btn-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+
+/* ── SPINNER ── */
+.spinner{display:none;width:20px;height:20px;border:2.5px solid #bfdbfe;border-top-color:#3b82f6;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RESULT BOX ── */
+.result-box{display:none;margin-top:24px;border-top:1px solid #f1f5f9;padding-top:20px;}
+.emotion-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 16px;border-radius:20px;font-size:13px;font-weight:700;
+  margin-bottom:14px;
+}
+.b-happy{background:#dcfce7;color:#15803d;}
+.b-sad{background:#fef9c3;color:#a16207;}
+.b-stress{background:#fee2e2;color:#b91c1c;}
+.b-angry{background:#ffedd5;color:#c2410c;}
+.b-fear{background:#fce7f3;color:#9d174d;}
+.b-sleepy{background:#ede9fe;color:#6d28d9;}
+.b-neutral{background:#f1f5f9;color:#475569;}
+.rec-text{font-size:15px;color:#334155;line-height:1.6;margin-bottom:14px;}
+.quote-text{font-size:14px;color:#475569;font-style:italic;margin-bottom:18px;}
+.section-label{font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;}
+.tips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:8px;}
+.tip-chip{
+  background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;
+  padding:9px 12px;font-size:13px;color:#334155;
+  display:flex;align-items:center;gap:8px;
+}
+.tip-chip::before{content:"✓";color:#22c55e;font-weight:700;flex-shrink:0;}
+
+/* ── VOICE ── */
+.voice-center{display:flex;flex-direction:column;align-items:center;gap:18px;padding:30px 0 20px;}
+.mic-btn{
+  width:90px;height:90px;border-radius:50%;
+  background:#eff6ff;border:2.5px solid #93c5fd;
+  display:flex;align-items:center;justify-content:center;
+  font-size:40px;cursor:pointer;transition:transform .18s;
+  user-select:none;
+}
+.mic-btn:hover{transform:scale(1.06);}
+.mic-btn.listening{animation:ripple 1.2s infinite;border-color:#3b82f6;background:#dbeafe;}
+@keyframes ripple{
+  0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.35);}
+  50%{box-shadow:0 0 0 18px rgba(59,130,246,0);}
+}
+.bars{display:flex;align-items:flex-end;gap:5px;height:44px;}
+.bar{width:7px;border-radius:4px;background:#93c5fd;transition:height .12s;}
+.voice-status{font-size:14px;color:#64748b;font-weight:500;}
+.transcript-box{
+  background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;
+  padding:12px 14px;font-size:14px;color:#475569;font-style:italic;
+  display:none;width:100%;margin-bottom:10px;
+}
+
+/* ── CAMERA ── */
+.cam-preview{
+  width:100%;aspect-ratio:16/9;border-radius:12px;
+  background:#0f172a;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;
+  margin-bottom:16px;position:relative;overflow:hidden;
+}
+.cam-off-icon{font-size:56px;opacity:.2;}
+.cam-off-text{font-size:14px;color:#475569;}
+.live-badge{
+  position:absolute;top:12px;left:12px;
+  background:rgba(0,0,0,.55);color:#fff;border-radius:6px;
+  padding:4px 10px;font-size:12px;display:none;
+  align-items:center;gap:6px;
+}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#ef4444;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.cam-status-label{
+  position:absolute;bottom:12px;left:12px;
+  background:rgba(0,0,0,.55);color:#fff;
+  border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;
+  display:none;
+}
+.stress-wrap{margin-top:16px;}
+.stress-row{display:flex;justify-content:space-between;font-size:13px;color:#64748b;margin-bottom:6px;}
+.stress-track{height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;}
+.stress-fill{height:100%;border-radius:4px;transition:width 1s ease;width:0%;}
+
+/* ── MEDITATION ── */
+.med-center{text-align:center;padding:32px 0;}
+.breath-ring{
+  width:120px;height:120px;border-radius:50%;
+  background:#eff6ff;border:3px solid #93c5fd;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:52px;margin-bottom:20px;transition:all .5s ease;
+}
+.breath-ring.inhale{transform:scale(1.18);border-color:#3b82f6;background:#dbeafe;}
+.breath-ring.exhale{transform:scale(1);border-color:#93c5fd;background:#eff6ff;}
+.breath-status{font-size:22px;font-weight:700;color:#1d4ed8;margin-bottom:6px;}
+.breath-sub{font-size:14px;color:#94a3b8;}
+
+/* ── ANALYTICS ── */
+.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.mini-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.mini-lbl{width:64px;font-size:12px;color:#64748b;text-align:right;flex-shrink:0;}
+.mini-track{flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;}
+.mini-fill{height:100%;border-radius:4px;}
+.mini-val{font-size:12px;color:#64748b;width:30px;flex-shrink:0;text-align:right;}
+.metric-row{display:flex;gap:16px;margin-bottom:20px;}
+.metric-card{flex:1;background:#f8fafc;border-radius:10px;padding:16px;text-align:center;}
+.metric-val{font-size:22px;font-weight:700;color:#1e293b;}
+.metric-lbl{font-size:12px;color:#64748b;margin-top:3px;}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  background:#1e293b;color:#fff;padding:12px 20px;
+  border-radius:10px;font-size:14px;font-weight:500;
+  display:none;z-index:999;animation:slideIn .3s ease;
+}
+@keyframes slideIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── HERO IMAGE ── */
+.hero-img{width:100%;border-radius:14px;height:200px;object-fit:cover;margin-bottom:24px;}
+
+footer{text-align:center;font-size:12px;color:#94a3b8;padding:32px 0 8px;border-top:1px solid #e2e8f0;margin-top:32px;}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══════════════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-title">🧠 Wellness AI</div>
+    <div class="logo-sub">Student Assistant</div>
+  </div>
+
+  <button class="nav-btn active" data-page="home">
+    <span class="nav-icon">🏠</span> Home
+  </button>
+  <button class="nav-btn" data-page="text">
+    <span class="nav-icon">📝</span> Text detection
+  </button>
+  <button class="nav-btn" data-page="voice">
+    <span class="nav-icon">🎤</span> Voice detection
+  </button>
+  <button class="nav-btn" data-page="camera">
+    <span class="nav-icon">📷</span> Camera detection
+  </button>
+  <button class="nav-btn" data-page="meditation">
+    <span class="nav-icon">🧘</span> Meditation
+  </button>
+  <button class="nav-btn" data-page="analytics">
+    <span class="nav-icon">📊</span> Analytics
+  </button>
+</nav>
+
+<!-- ══ MAIN ═════════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- HOME -->
+  <section class="page active" id="page-home">
+    <div class="page-header">
+      <h1>🧠 AI Student Wellness Assistant</h1>
+      <p>Detect your emotional state and get personalised wellness guidance in real time.</p>
+    </div>
+
+    <img class="hero-img" src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&q=80" alt="Students studying"/>
+
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#eff6ff;">🎯</div>
+        <div><div class="stat-val">3 Modes</div><div class="stat-lbl">Detection options</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#f0fdf4;">⚡</div>
+        <div><div class="stat-val">Real-time</div><div class="stat-lbl">Emotion analysis</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fffbeb;">🧘</div>
+        <div><div class="stat-val">Guided</div><div class="stat-lbl">Meditation</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fdf4ff;">📊</div>
+        <div><div class="stat-val">Analytics</div><div class="stat-lbl">Emotion trends</div></div>
+      </div>
+    </div>
+
+    <h2 style="font-size:17px;font-weight:700;color:#1e293b;margin-bottom:16px;">Problems we help with</h2>
+    <div class="problem-grid">
+      <div class="problem-card"><div class="picon">😰</div><div><h3>Exam stress</h3><p>Detect stress early and get targeted breathing and relaxation exercises.</p></div></div>
+      <div class="problem-card"><div class="picon">😴</div><div><h3>Sleep issues</h3><p>Poor sleep affects concentration. Get tips to refresh and refocus quickly.</p></div></div>
+      <div class="problem-card"><div class="picon">😢</div><div><h3>Demotivation</h3><p>Receive personalised motivational quotes matched to your current mood.</p></div></div>
+      <div class="problem-card"><div class="picon">📚</div><div><h3>Study pressure</h3><p>Break the cycle of overwhelm with guided activities and structured breaks.</p></div></div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card fc-blue"><div class="ficon">📝</div><h4>Text detection</h4><p>Type how you feel and get instant analysis.</p></div>
+      <div class="feature-card fc-green"><div class="ficon">🎤</div><h4>Voice detection</h4><p>Speak naturally — your words are analysed live.</p></div>
+      <div class="feature-card fc-amber"><div class="ficon">📷</div><h4>Camera detection</h4><p>Facial expression tracking via your webcam.</p></div>
+    </div>
+  </section>
+
+  <!-- TEXT DETECTION -->
+  <section class="page" id="page-text">
+    <div class="page-header">
+      <h1>📝 Text emotion detection</h1>
+      <p>Type how you are feeling and we will analyse your emotional state instantly.</p>
+    </div>
+    <div class="card">
+      <h2>How are you feeling today?</h2>
+      <div class="sub">Be as descriptive as you like — the more detail, the better the analysis.</div>
+      <textarea id="text-input" placeholder="e.g. I'm feeling really overwhelmed with my exams lately and can't seem to focus…"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="analyzeText()">🔍 Analyse emotion</button>
+        <div class="spinner" id="text-spinner"></div>
+      </div>
+      <div class="result-box" id="text-result"></div>
+    </div>
+  </section>
+
+  <!-- VOICE DETECTION -->
+  <section class="page" id="page-voice">
+    <div class="page-header">
+      <h1>🎤 Voice emotion detection</h1>
+      <p>Speak naturally — your words will be transcribed and analysed.</p>
+    </div>
+    <div class="card">
+      <h2>Tap the microphone to begin</h2>
+      <div class="sub">Speak clearly for up to 10 seconds. The assistant listens and detects your emotion from what you say.</div>
+
+      <div class="voice-center">
+        <div class="mic-btn" id="mic-btn" onclick="startVoice()">🎤</div>
+        <div class="bars" id="bars">
+          <div class="bar" style="height:8px"></div>
+          <div class="bar" style="height:14px"></div>
+          <div class="bar" style="height:20px"></div>
+          <div class="bar" style="height:10px"></div>
+          <div class="bar" style="height:16px"></div>
+          <div class="bar" style="height:6px"></div>
+          <div class="bar" style="height:22px"></div>
+        </div>
+        <div class="voice-status" id="voice-status">Tap the microphone to begin</div>
+      </div>
+
+      <div class="transcript-box" id="transcript-box"></div>
+      <div class="result-box" id="voice-result"></div>
+    </div>
+  </section>
+
+  <!-- CAMERA DETECTION -->
+  <section class="page" id="page-camera">
+    <div class="page-header">
+      <h1>📷 Camera emotion detection</h1>
+      <p>Live facial expression analysis using your webcam and DeepFace.</p>
+    </div>
+    <div class="card">
+      <h2>Live camera feed</h2>
+      <div class="sub">Start the camera — emotion and stress level update every 2 seconds from your facial expression.</div>
+
+      <div class="cam-preview" id="cam-preview">
+        <div class="cam-off-icon">📷</div>
+        <div class="cam-off-text">Camera is off</div>
+        <div class="live-badge" id="live-badge"><span class="live-dot"></span> Live</div>
+        <div class="cam-status-label" id="cam-label">Detecting…</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="cam-start-btn" onclick="startCamera()">▶ Start camera</button>
+        <button class="btn btn-danger" id="cam-stop-btn" onclick="stopCamera()" style="display:none;">⏹ Stop camera</button>
+      </div>
+
+      <div class="stress-wrap" id="stress-wrap" style="display:none;">
+        <div class="stress-row"><span>Stress level</span><span id="stress-val">—</span></div>
+        <div class="stress-track"><div class="stress-fill" id="stress-fill"></div></div>
+      </div>
+
+      <div class="result-box" id="cam-result"></div>
+    </div>
+  </section>
+
+  <!-- MEDITATION -->
+  <section class="page" id="page-meditation">
+    <div class="page-header">
+      <h1>🧘 Guided meditation</h1>
+      <p>Take a few minutes to breathe, reset, and recenter yourself.</p>
+    </div>
+    <div class="card" style="max-width:520px;margin:0 auto;">
+      <div class="med-center">
+        <div class="breath-ring" id="breath-ring">🧘</div>
+        <div class="breath-status" id="breath-status">Ready to begin</div>
+        <div class="breath-sub" id="breath-sub">3 deep breathing cycles · ~1 minute</div>
+      </div>
+      <div style="text-align:center;">
+        <button class="btn btn-primary" id="med-btn" onclick="startMeditation()">🧘 Begin meditation</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ANALYTICS -->
+  <section class="page" id="page-analytics">
+    <div class="page-header">
+      <h1>📊 Analytics dashboard</h1>
+      <p>Emotion patterns from your camera sessions this session.</p>
+    </div>
+    <div id="analytics-content">
+      <div class="card" style="text-align:center;padding:48px;">
+        <div style="font-size:48px;margin-bottom:16px;">📊</div>
+        <p style="font-size:15px;color:#64748b;">No data yet — run a camera session first to see analytics here.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = "http://localhost:8000";
+
+// ── session analytics data ──
+let sessionEmotions = [];
+let sessionStress   = [];
+
+// ── navigation ──────────────────────────────
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("page-" + btn.dataset.page).classList.add("active");
+    if (btn.dataset.page === "analytics") renderAnalytics();
+  });
+});
+
+// ── toast ────────────────────────────────────
+function toast(msg, ms=3000) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  setTimeout(() => t.style.display = "none", ms);
+}
+
+// ── render result ────────────────────────────
+const emojis = {happy:"😊",sad:"😢",stress:"😰",angry:"😠",fear:"😨",sleepy:"😴",neutral:"😐"};
+const badges  = {happy:"b-happy",sad:"b-sad",stress:"b-stress",angry:"b-angry",fear:"b-fear",sleepy:"b-sleepy",neutral:"b-neutral"};
+
+function renderResult(data, targetId) {
+  const chips = data.activities.map(a => `<div class="tip-chip">${a}</div>`).join("");
+  const html = `
+    <span class="emotion-badge ${badges[data.emotion]||'b-neutral'}">
+      ${emojis[data.emotion]||"😐"} ${data.emotion.charAt(0).toUpperCase()+data.emotion.slice(1)} detected
+    </span>
+    <p class="rec-text">${data.recommend}</p>
+    <div class="section-label">💡 Motivation</div>
+    <p class="quote-text">"${data.motivation}"</p>
+    <div class="section-label">⚡ Suggested activities</div>
+    <div class="tips-grid">${chips}</div>
+    ${["stress","sad","fear","angry"].includes(data.emotion)
+      ? `<div style="margin-top:18px;">
+           <button class="btn btn-green" onclick="goMeditation()">🧘 Go to meditation</button>
+         </div>` : ""}
+  `;
+  const el = document.getElementById(targetId);
+  el.innerHTML = html;
+  el.style.display = "block";
+}
+
+function goMeditation() {
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelector('[data-page="meditation"]').classList.add("active");
+  document.getElementById("page-meditation").classList.add("active");
+}
+
+// ── TEXT DETECTION ───────────────────────────
+async function analyzeText() {
+  const text = document.getElementById("text-input").value.trim();
+  if (!text) { toast("Please type something first."); return; }
+
+  const spinner = document.getElementById("text-spinner");
+  spinner.style.display = "block";
+
+  try {
+    const res  = await fetch(`${API}/analyze/text`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({text})
+    });
+    const data = await res.json();
+    renderResult(data, "text-result");
+  } catch(e) {
+    toast("❌ Could not reach server. Make sure server.py is running.");
+  } finally {
+    spinner.style.display = "none";
+  }
+}
+
+// ── VOICE DETECTION ──────────────────────────
+let barInterval;
+
+function animateBars(on) {
+  const bars = document.querySelectorAll(".bar");
+  if (on) {
+    barInterval = setInterval(() => {
+      bars.forEach(b => b.style.height = Math.floor(Math.random()*32+6)+"px");
+    }, 140);
+  } else {
+    clearInterval(barInterval);
+    [8,14,20,10,16,6,22].forEach((h,i) => bars[i].style.height = h+"px");
+  }
+}
+
+async function startVoice() {
+  const btn    = document.getElementById("mic-btn");
+  const status = document.getElementById("voice-status");
+  const trans  = document.getElementById("transcript-box");
+
+  btn.classList.add("listening");
+  btn.textContent = "🔴";
+  status.textContent = "Listening… speak now";
+  animateBars(true);
+  document.getElementById("voice-result").style.display = "none";
+  trans.style.display = "none";
+
+  try {
+    const res  = await fetch(`${API}/analyze/voice`);
+    const data = await res.json();
+
+    btn.classList.remove("listening");
+    btn.textContent = "🎤";
+    animateBars(false);
+
+    if (data.error) {
+      status.textContent = data.error;
+      toast("⚠️ " + data.error);
+      return;
+    }
+
+    status.textContent = "Analysis complete";
+    trans.textContent  = `"${data.transcript}"`;
+    trans.style.display = "block";
+    renderResult(data, "voice-result");
+
+  } catch(e) {
+    btn.classList.remove("listening");
+    btn.textContent = "🎤";
+    animateBars(false);
+    status.textContent = "Server not reachable";
+    toast("❌ Make sure server.py is running.");
+  }
+}
+
+// ── CAMERA DETECTION ─────────────────────────
+let camPollInterval;
+
+async function startCamera() {
+  try {
+    await fetch(`${API}/camera/start`);
+  } catch(e) {
+    toast("❌ Could not reach server."); return;
+  }
+
+  // show live UI
+  const preview = document.getElementById("cam-preview");
+  preview.innerHTML = `
+    <div style="font-size:80px;opacity:.12;color:#fff;">👤</div>
+    <div class="live-badge" id="live-badge" style="display:flex;"><span class="live-dot"></span> Live</div>
+    <div class="cam-status-label" id="cam-label" style="display:block;">Detecting…</div>
+  `;
+  document.getElementById("cam-start-btn").style.display = "none";
+  document.getElementById("cam-stop-btn").style.display  = "inline-flex";
+  document.getElementById("stress-wrap").style.display   = "block";
+
+  camPollInterval = setInterval(pollCamera, 2500);
+}
+
+async function pollCamera() {
+  try {
+    const res  = await fetch(`${API}/camera/status`);
+    const data = await res.json();
+
+    const label = document.getElementById("cam-label");
+    if (label) label.textContent = `Emotion: ${data.emotion}  |  Stress: ${data.stress}%`;
+
+    document.getElementById("stress-val").textContent = data.stress + "%";
+    const fill = document.getElementById("stress-fill");
+    fill.style.width = data.stress + "%";
+    fill.style.background = data.stress > 70 ? "#ef4444" : data.stress > 45 ? "#f59e0b" : "#22c55e";
+  } catch(e) {}
+}
+
+async function stopCamera() {
+  clearInterval(camPollInterval);
+
+  let data;
+  try {
+    const res = await fetch(`${API}/camera/stop`);
+    data = await res.json();
+  } catch(e) {
+    toast("❌ Could not reach server."); return;
+  }
+
+  // reset preview
+  const preview = document.getElementById("cam-preview");
+  preview.innerHTML = `
+    <div class="cam-off-icon">📷</div>
+    <div class="cam-off-text" style="color:#475569;">Camera stopped</div>
+  `;
+  document.getElementById("cam-start-btn").style.display = "inline-flex";
+  document.getElementById("cam-stop-btn").style.display  = "none";
+
+  if (data.error) { toast("⚠️ " + data.error); return; }
+
+  // save to analytics
+  sessionEmotions.push(data.emotion);
+  sessionStress.push(data.avg_stress);
+
+  document.getElementById("stress-val").textContent = data.avg_stress + "%";
+  const fill = document.getElementById("stress-fill");
+  fill.style.width = data.avg_stress + "%";
+  fill.style.background = data.avg_stress > 70 ? "#ef4444" : data.avg_stress > 45 ? "#f59e0b" : "#22c55e";
+
+  renderResult(data, "cam-result");
+  toast(`✅ Session complete — dominant emotion: ${data.emotion}`);
+}
+
+// ── MEDITATION ───────────────────────────────
+function startMeditation() {
+  const btn    = document.getElementById("med-btn");
+  const ring   = document.getElementById("breath-ring");
+  const status = document.getElementById("breath-status");
+  const sub    = document.getElementById("breath-sub");
+
+  btn.disabled = true;
+  btn.textContent = "🧘 Meditating…";
+
+  const evtSource = new EventSource(`${API}/meditation/stream`);
+
+  evtSource.onmessage = (e) => {
+    const [phase, label] = e.data.split("|");
+
+    if (phase === "done") {
+      ring.className = "breath-ring";
+      ring.textContent = "✅";
+      status.textContent = "Meditation complete!";
+      sub.textContent = "You should feel calmer now.";
+      btn.disabled = false;
+      btn.textContent = "🧘 Begin meditation";
+      evtSource.close();
+      return;
+    }
+
+    if (phase === "inhale") {
+      ring.classList.remove("exhale");
+      ring.classList.add("inhale");
+      ring.textContent = "🫁";
+      status.textContent = "Inhale…";
+    } else {
+      ring.classList.remove("inhale");
+      ring.classList.add("exhale");
+      ring.textContent = "😮‍💨";
+      status.textContent = "Exhale…";
+    }
+    sub.textContent = label;
+  };
+
+  evtSource.onerror = () => {
+    status.textContent = "Server not reachable";
+    btn.disabled = false;
+    btn.textContent = "🧘 Begin meditation";
+    evtSource.close();
+    toast("❌ Make sure server.py is running.");
+  };
+}
+
+// ── ANALYTICS ────────────────────────────────
+const emotionColors = {
+  happy:"#22c55e", neutral:"#94a3b8", sad:"#f59e0b",
+  stress:"#ef4444", angry:"#f97316", fear:"#a855f7", sleepy:"#6366f1"
+};
+
+function renderAnalytics() {
+  const el = document.getElementById("analytics-content");
+  if (sessionEmotions.length === 0) {
+    el.innerHTML = `<div class="card" style="text-align:center;padding:48px;">
+      <div style="font-size:48px;margin-bottom:16px;">📊</div>
+      <p style="font-size:15px;color:#64748b;">No data yet — run a camera session first.</p>
+    </div>`;
+    return;
+  }
+
+  const counts = {};
+  sessionEmotions.forEach(e => counts[e] = (counts[e]||0)+1);
+  const total = sessionEmotions.length;
+  const dominant = Object.keys(counts).reduce((a,b)=>counts[a]>counts[b]?a:b);
+  const avgStress = Math.round(sessionStress.reduce((a,b)=>a+b,0)/sessionStress.length);
+
+  const bars = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([em,cnt])=>{
+    const pct = Math.round(cnt/total*100);
+    return `<div class="mini-bar-row">
+      <div class="mini-lbl">${em}</div>
+      <div class="mini-track"><div class="mini-fill" style="width:${pct}%;background:${emotionColors[em]||'#94a3b8'};"></div></div>
+      <div class="mini-val">${pct}%</div>
+    </div>`;
+  }).join("");
+
+  el.innerHTML = `
+    <div class="metric-row">
+      <div class="metric-card">
+        <div class="metric-val">${dominant}</div>
+        <div class="metric-lbl">Dominant emotion</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">${avgStress}%</div>
+        <div class="metric-lbl">Avg stress level</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">${sessionEmotions.length}</div>
+        <div class="metric-lbl">Sessions recorded</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:16px;">Emotion distribution</h2>
+      ${bars}
+    </div>
+    <div style="margin-top:12px;">
+      <button class="btn btn-danger" onclick="clearAnalytics()">🗑 Clear session data</button>
+    </div>
+  `;
+}
+
+function clearAnalytics() {
+  sessionEmotions = [];
+  sessionStress   = [];
+  renderAnalytics();
+  toast("Session data cleared.");
+}
+</script>
+</body>
+</html>

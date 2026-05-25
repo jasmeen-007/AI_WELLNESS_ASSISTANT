@@ -1,0 +1,11 @@
+streamlit
+opencv-python
+pandas
+numpy
+scikit-learn
+speechrecognition
+tensorflow
+keras
+pyaudio
+flask
+gunicorn
